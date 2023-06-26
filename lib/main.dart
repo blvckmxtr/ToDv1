@@ -1,9 +1,11 @@
-import 'dart:developer';
+import 'dart:developer' as developer;
+import 'dart:math';
 import 'package:appinio_swiper/appinio_swiper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'questions.dart'; // Import your questions.dart file here
-import 'package:flutter_svg/flutter_svg.dart'; // Import the flutter_svg package
+import 'custom_swiper_controller.dart';
+import 'questions.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,9 +16,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const CupertinoApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: HomeScreen(),
+      home: Material(child: HomeScreen()),
     );
   }
 }
@@ -28,9 +30,12 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
-  final AppinioSwiperController controller = AppinioSwiperController();
-  List<Map<String, String>> questions = [];
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  final CustomSwiperController controller = CustomSwiperController();
+  List<Map<String, String>> allQuestions = [];
+  List<Map<String, String>> filteredQuestions = [];
+  String _selectedColor = 'All Colors';
   final Map<String, bool> _isPressed = {
     'rewind': false,
     'color_wheel': false,
@@ -39,22 +44,62 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   late AnimationController _animationController;
   late Animation<double> _animation;
-  String? _selectedColor; // Track the selected color for filtering
+  int colorIndex = 0;
+  List<Color> colors = [
+    Colors.white,
+    Colors.red,
+    Colors.blue,
+    Colors.green,
+    Colors.orange,
+    Colors.yellow,
+  ];
+
+  double titleTopMargin = 0;
+  double questionTopMargin = 0;
+
+  // Add a Map to keep track of the index for each color
+  Map<String, int> colorIndices = {
+    'All Colors': 0,
+    'Red': 0,
+    'Blue': 0,
+    'Green': 0,
+    'Orange': 0,
+    'Yellow': 0,
+  };
+
+  Map<String, int> lastIndices = {
+    'All Colors': 0,
+    'Red': 0,
+    'Blue': 0,
+    'Green': 0,
+    'Orange': 0,
+    'Yellow': 0,
+  };
 
   @override
   void initState() {
     super.initState();
-    questions = List<Map<String, String>>.from(questionsData)..shuffle(); // Use your questions list here
+    allQuestions = List<Map<String, String>>.from(questionsData)..shuffle();
+    filteredQuestions = List<Map<String, String>>.from(allQuestions);
+
+    filteredQuestions.insert(
+      0,
+      {
+        'type': "Let's play a game.",
+        'question': 'Each color is a different intensity.',
+        'color': 'Blue',
+      },
+    );
 
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300), // Increase the animation duration
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
 
     _animation = Tween<double>(begin: 1.0, end: 0.98).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: Curves.easeInOut, // Use a different curve for a more subtle animation
+        curve: Curves.easeInOut,
       ),
     );
   }
@@ -67,135 +112,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void shuffleCards() {
     setState(() {
-      questions.shuffle();
-      _animationController.forward(from: 0.0); // Trigger the animation when shuffling the cards
+      filteredQuestions.shuffle();
+      _animationController.forward(from: 0.0);
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: Colors.transparent, // Make the background transparent
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.black, Colors.black87], // Soft gradient black background
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, // Center the column
-          children: [
-            ScaleTransition(
-              scale: _animation,
-              child: Center( // Center the swiper
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.75,
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (BuildContext context, Widget? child) {
-                      return Transform.scale(
-                        scale: _animation.value - 0.02, // Adjust the scale to make the animation more subtle
-                        child: AppinioSwiper(
-                          backgroundCardsCount: 3,
-                          swipeOptions: const AppinioSwipeOptions.all(),
-                          unlimitedUnswipe: true,
-                          controller: controller,
-                          unswipe: _unswipe,
-                          onSwiping: (AppinioSwiperDirection direction) {
-                            debugPrint(direction.toString());
-                          },
-                          onSwipe: _swipe,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 50, // Increase horizontal padding
-                            vertical: 100, // Increase vertical padding
-                          ),
-                          onEnd: _onEnd,
-                          cardsCount: questions.length,
-                          cardsBuilder: (BuildContext context, int index) {
-                            if (_selectedColor != null && questions[index]['color'] != _selectedColor) {
-                              return Container(); // Skip cards with different color if a color is selected
-                            }
-                            return Container(
-                              width: 300, // Set a fixed width
-                              height: 400, // Set a fixed height
-                              decoration: BoxDecoration(
-                                gradient: getGradient(questions[index]['color']), // Set card gradient based on question color
-                                borderRadius: BorderRadius.circular(8.0),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.25), // Adjust the shadow color and opacity
-                                    blurRadius: 10, // Adjust the blur radius
-                                    spreadRadius: 2, // Adjust the spread radius
-                                  ),
-                                ],
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(30.10), // Increase padding
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start, // Align the text to the top
-                                  crossAxisAlignment: CrossAxisAlignment.center, // Center the text horizontally
-                                  children: [
-                                    const SizedBox(height: 20),
-                                    Align(
-                                      alignment: Alignment.topCenter,
-                                      child: Text(
-                                        questions[index]['type']!,
-                                        style: TextStyle(
-                                          fontFamily: 'JUST Sans Variable', // Replace with your custom font
-                                          fontSize: 32.0,
-                                          color: getTextColor(questions[index]['color']), // Set text color based on question color
-                                          fontWeight: FontWeight.normal, // Make text bold
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    Align(
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        questions[index]['question']!,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontFamily: 'JUST Sans Variable', // Replace with your custom font
-                                          fontSize: 26.0,
-                                          color: getTextColor(questions[index]['color']), // Set text color based on question color
-                                          fontWeight: FontWeight.normal, // Make text bold
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                buildButton('assets/rewind_line.svg', () {
-                  controller.unswipe();
-                }, 'rewind'),
-                buildButton('assets/color_wheel.svg', () {
-                  // Add your color wheel functionality here
-                }, 'color_wheel', applyColorFilter: true),
-
-                buildButton('assets/shuffle.svg', shuffleCards, 'shuffle'),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  GestureDetector buildButton(String asset, VoidCallback onPressed, String key, {bool applyColorFilter = true}) {
+  GestureDetector buildButton(
+      String asset,
+      VoidCallback onPressed,
+      String key,
+      Color color, {
+        bool applyColorFilter = true,
+      }) {
     return GestureDetector(
       onTapDown: (details) {
         setState(() {
@@ -218,30 +146,37 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         curve: Curves.bounceOut,
         width: (_isPressed[key] ?? false) ? 40 : 50,
         height: (_isPressed[key] ?? false) ? 40 : 50,
-        child: applyColorFilter ? ColorFiltered(colorFilter: const ColorFilter.matrix(<double>[
-          -1, 0, 0, 0, 255,
-          0, -1, 0, 0, 255,
-          0, 0, -1, 0, 255,
-          0, 0, 0, 1, 0,
-        ]),
+        child: applyColorFilter
+            ? ColorFiltered(
+          colorFilter: const ColorFilter.matrix(<double>[
+            -1,
+            0,
+            0,
+            0,
+            255,
+            0,
+            -1,
+            0,
+            0,
+            255,
+            0,
+            0,
+            -1,
+            0,
+            255,
+            0,
+            0,
+            0,
+            1,
+            0,
+          ]),
           child: SvgPicture.asset(asset),
-        ) : SvgPicture.asset(asset),
+        )
+            : SvgPicture.asset(asset, color: color),
       ),
       onTap: () {
         if (key == 'color_wheel') {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text('Select Color'),
-                content: SingleChildScrollView(
-                  child: ListBody(
-                    children: getColorOptions(),
-                  ),
-                ),
-              );
-            },
-          );
+          cycleColors();
         } else {
           onPressed();
         }
@@ -249,43 +184,242 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  List<Color> colors = [Colors.red, Colors.blue, Colors.green, Colors.orange, Colors.yellow];
-  int colorIndex = 0;
+  GestureDetector buildColorButton(Color color) {
+    bool isAllColors = _selectedColor == 'All Colors';
 
-
-  List<Widget> getColorOptions() {
-    return [
-      buildColorOption('All Colors'), // Add an option for all colors
-      buildColorOption('Red'),
-      buildColorOption('Blue'),
-      buildColorOption('Orange'),
-      buildColorOption('Green'),
-      buildColorOption('Yellow'),
-    ];
-  }
-
-  Widget buildColorOption(String color) {
-    final bool isSelected = _selectedColor == color;
     return GestureDetector(
-      onTap: () {
+      onTapDown: (details) {
         setState(() {
-          _selectedColor = color == 'All Colors' ? null : color;
-          Navigator.pop(context);
+          _isPressed['color_wheel'] = true;
+        });
+        cycleColors();
+      },
+      onTapUp: (details) {
+        setState(() {
+          _isPressed['color_wheel'] = false;
         });
       },
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      onTapCancel: () {
+        setState(() {
+          _isPressed['color_wheel'] = false;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.bounceOut,
+        width: (_isPressed['color_wheel'] ?? false) ? 40 : 50,
+        height: (_isPressed['color_wheel'] ?? false) ? 40 : 50,
         decoration: BoxDecoration(
-          color: isSelected ? Colors.grey[300] : Colors.transparent,
-          borderRadius: BorderRadius.circular(8.0),
+          shape: BoxShape.circle,
+          gradient: isAllColors ? getMulticolorGradient() : null,
+          color: isAllColors ? null : color,
         ),
-        child: Text(
-          color,
-          style: TextStyle(
-            color: isSelected ? Colors.black : Colors.white,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        child: SvgPicture.asset(
+          'assets/color_wheel.svg',
+          color: isAllColors ? Colors.black : Colors.white,
+        ),
+      ),
+    );
+  }
+
+  LinearGradient getMulticolorGradient() {
+    return const LinearGradient(
+      colors: [
+        Colors.red,
+        Colors.blue,
+        Colors.green,
+        Colors.orange,
+        Colors.yellow,
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+  }
+
+  void cycleColors() {
+    setState(() {
+      controller.jumpTo(0); // Reset the swiper's index to 0
+      colorIndex = (colorIndex + 1) % colors.length;
+      switch (colors[colorIndex]) {
+        case Colors.red:
+          _selectedColor = 'Red';
+          break;
+        case Colors.blue:
+          _selectedColor = 'Blue';
+          break;
+        case Colors.green:
+          _selectedColor = 'Green';
+          break;
+        case Colors.orange:
+          _selectedColor = 'Orange';
+          break;
+        case Colors.yellow:
+          _selectedColor = 'Yellow';
+          break;
+        default:
+          _selectedColor = 'All Colors';
+          break;
+      }
+      filterQuestions();
+    });
+  }
+
+  void filterQuestions() {
+    setState(() {
+      if (_selectedColor == 'All Colors') {
+        filteredQuestions = List<Map<String, String>>.from(allQuestions);
+      } else {
+        filteredQuestions = allQuestions
+            .where((question) => question['color'] == _selectedColor)
+            .toList();
+      }
+      controller.jumpTo(0); // Reset the swiper's index to 0
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoPageScaffold(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.black, Colors.black],
           ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 0.0),
+                child: ScaleTransition(
+                  scale: _animation,
+                  child: Center(
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.75,
+                      child: AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (BuildContext context, Widget? child) {
+                          return Transform.scale(
+                            scale: _animation.value - 0.02,
+                            child: AppinioSwiper(
+                              backgroundCardsCount: 3,
+                              swipeOptions: const AppinioSwipeOptions.all(),
+                              unlimitedUnswipe: true,
+                              controller: controller,
+                              unswipe: _unswipe,
+                              onSwiping: (AppinioSwiperDirection direction) {
+                                debugPrint(direction.toString());
+                              },
+                              onSwipe: _swipe,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 30,
+                                vertical: 50,
+                              ),
+                              onEnd: _onEnd,
+                              cardsCount: filteredQuestions.length,
+                              cardsBuilder:
+                                  (BuildContext context, int index) {
+                                return Container(
+                                  width: 500,
+                                  height: 500,
+                                  decoration: BoxDecoration(
+                                    gradient: getGradient(
+                                        filteredQuestions[index]['color']),
+                                    borderRadius:
+                                    BorderRadius.circular(36.0),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.25),
+                                        blurRadius: 10,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(30.10),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                      MainAxisAlignment.start,
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.center,
+                                      children: [
+                                        const SizedBox(height: 20),
+                                        if (index == 0)
+                                          Expanded(
+                                            child: Image.asset(
+                                              'assets/logo.png',
+                                              fit: BoxFit.scaleDown,
+                                            ),
+                                          ),
+                                        Align(
+                                          alignment: Alignment.topCenter,
+                                          child: Text(
+                                            filteredQuestions[index]['type']!,
+                                            style: TextStyle(
+                                              fontFamily:
+                                              'JUST Sans Variable',
+                                              fontSize: 32.0,
+                                              color: getTextColor(
+                                                  filteredQuestions[index]
+                                                  ['color']),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 26),
+                                        Align(
+                                          alignment: index == 0
+                                              ? Alignment.centerLeft
+                                              : Alignment.center,
+                                          child: Text(
+                                            filteredQuestions[index]
+                                            ['question']!,
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontFamily:
+                                              'JUST Sans Variable',
+                                              fontSize:
+                                              index == 0 ? 24.0 : 30.0,
+                                              color: getTextColor(
+                                                  filteredQuestions[index]
+                                                  ['color']),
+                                              fontWeight: FontWeight.normal,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 100.0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  buildButton('assets/rewind_line.svg', () {
+                    controller.unswipe();
+                  }, 'rewind', Colors.white),
+                  buildColorButton(colors[colorIndex]),
+                  buildButton('assets/shuffle.svg', shuffleCards, 'shuffle',
+                      Colors.white),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -328,7 +462,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Colors.grey[300]!, Colors.grey[700]!],
-        ); // Default color
+        );
     }
   }
 
@@ -344,18 +478,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _swipe(int index, AppinioSwiperDirection direction) {
-    log("the card was swiped to the: ${direction.name}");
+    developer.log("The card was swiped to the ${direction.name}");
+    lastIndices[_selectedColor] = index + 1; // Update the last index for the current color
   }
 
   void _unswipe(bool unswiped) {
     if (unswiped) {
-      log("SUCCESS: card was unswiped");
+      developer.log("SUCCESS: The card was unswiped");
+      lastIndices[_selectedColor] = max(0, lastIndices[_selectedColor] ?? 0 - 1); // Update the last index for the current color
     } else {
-      log("FAIL: no card left to unswipe");
+      developer.log("FAIL: No card left to unswipe");
     }
   }
 
   void _onEnd() {
-    log("end reached!");
+    developer.log("All cards have been swiped");
   }
+
 }

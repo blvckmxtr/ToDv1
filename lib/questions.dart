@@ -27,6 +27,65 @@ List<Map<String, String>> questionsData = [
   },
   {
     'type': 'Dare',
+    'question': "Ask someone in the group to do a body shot off of you.",
+    'color': 'Red',
+  },
+
+  {
+    'type': 'Dare',
+    'question': "Do a striptease for the group.",
+    'color': 'Red',
+  },
+
+  {
+    'type': 'Dare',
+    'question': "Sing a dirty version of a nursery rhyme.",
+    'color': 'Red',
+  },
+
+  {
+    'type': 'Dare',
+    'question': "Let someone else shave a funny shape into your head.",
+    'color': 'Red',
+  },
+
+  {
+    'type': 'Dare',
+    'question': " Dress up in an outrageous costume.",
+    'color': 'Red',
+  },
+
+   {
+    'type': 'Truth',
+    'question': "What is the most shocking thing you have ever done?",
+    'color': 'Red',
+  },
+
+  {
+    'type': 'Truth',
+    'question': "Have you ever told a white lie to get out of a sticky situation?",
+    'color': 'Red',
+  },
+
+  {
+    'type': 'Truth',
+    'question': "What is the craziest sexual experience you've ever had?",
+    'color': 'Red',
+  },
+
+  {
+    'type': 'Truth',
+    'question': "When was the last time you lied to a friend?",
+    'color': 'Red',
+  },
+
+  {
+    'type': 'Truth',
+    'question': "Have you ever done something stupid while under the influence of alcohol?",
+    'color': 'Red',
+  },
+  {
+    'type': 'Dare',
     'question': "Perform your best impression of an adult film star.",
     'color': 'Red',
   },
