@@ -3,11 +3,23 @@ import 'dart:math';
 import 'package:appinio_swiper/appinio_swiper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'custom_swiper_controller.dart';
 import 'questions.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 
 void main() {
+  // Step 2
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Step 3
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]).then((value) => runApp(const MyApp()));
+  MobileAds.instance.initialize();
   runApp(const MyApp());
 }
 
@@ -23,6 +35,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -30,8 +43,7 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   final CustomSwiperController controller = CustomSwiperController();
   List<Map<String, String>> allQuestions = [];
   List<Map<String, String>> filteredQuestions = [];
@@ -41,6 +53,8 @@ class _HomeScreenState extends State<HomeScreen>
     'color_wheel': false,
     'shuffle': false,
   };
+
+  late BannerAd myBanner; // Add this line
 
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -102,11 +116,24 @@ class _HomeScreenState extends State<HomeScreen>
         curve: Curves.easeInOut,
       ),
     );
+
+    myBanner = BannerAd( // Add this block
+      adUnitId: 'ca-app-pub-3064319417594991/4334025628',
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: const BannerAdListener(),
+    );
+
+    myBanner.load(); // Add this line
   }
+
+
+
 
   @override
   void dispose() {
     _animationController.dispose();
+    myBanner.dispose(); // Add this line
     super.dispose();
   }
 
@@ -292,6 +319,14 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            Padding(
+            padding: const EdgeInsets.only(top: 30.0), // Adjust this value as needed
+            child: SizedBox(
+              width: myBanner.size.width.toDouble(),
+              height: myBanner.size.height.toDouble(),
+              child: AdWidget(ad: myBanner),
+            ),
+          ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 0.0),
@@ -340,19 +375,22 @@ class _HomeScreenState extends State<HomeScreen>
                                     ],
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsets.all(30.10),
+                                    padding: const EdgeInsets.all(30.40),
                                     child: Column(
                                       mainAxisAlignment:
                                       MainAxisAlignment.start,
                                       crossAxisAlignment:
                                       CrossAxisAlignment.center,
                                       children: [
-                                        const SizedBox(height: 20),
-                                        if (index == 0)
+                                        const SizedBox(height: 10),
+                                        if (index == 0&& filteredQuestions[index]['type'] == "Let's play a game.")
                                           Expanded(
-                                            child: Image.asset(
-                                              'assets/logo.png',
-                                              fit: BoxFit.scaleDown,
+                                            child: Transform.translate(
+                                              offset: Offset(0,-25), // Adjust this value to change the size of the logo
+                                              child: Image.asset(
+                                                'assets/logo.png',
+                                                fit: BoxFit.scaleDown,
+                                              ),
                                             ),
                                           ),
                                         Align(
@@ -395,7 +433,7 @@ class _HomeScreenState extends State<HomeScreen>
                                     ),
                                   ),
                                 );
-                              },
+                                  },
                             ),
                           );
                         },
@@ -437,19 +475,19 @@ class _HomeScreenState extends State<HomeScreen>
         return LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Colors.orange[300]!, Colors.orange[700]!],
+          colors: [Colors.orange[300]!, Colors.orange[800]!],
         );
       case 'Green':
         return LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Colors.green[300]!, Colors.green[700]!],
+          colors: [Colors.green[300]!, Colors.green[800]!],
         );
       case 'Yellow':
         return LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Colors.yellow[300]!, Colors.yellow[700]!],
+          colors: [Colors.yellow[400]!, Colors.yellow[700]!],
         );
       case 'Red':
         return LinearGradient(
@@ -476,7 +514,6 @@ class _HomeScreenState extends State<HomeScreen>
         return Colors.white;
     }
   }
-
   void _swipe(int index, AppinioSwiperDirection direction) {
     developer.log("The card was swiped to the ${direction.name}");
     lastIndices[_selectedColor] = index + 1; // Update the last index for the current color
@@ -496,3 +533,4 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
 }
+

@@ -1,5 +1,5 @@
-name: thequestiongame
-description: A new Flutter project.
+name: Truth_Or_Dare
+description: This is the ultimate game of Truth or Dare. Play with friends, family, collegues. Developed by Nate & Chriselle Dwarika
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -39,6 +39,8 @@ dependencies:
   appinio_swiper: ^2.0.2
   flutter_svg: ^2.0.7
   flutter_color_picker_wheel: ^0.0.1
+  google_mobile_ads: ^3.0.0
+  csv: ^5.0.2
 
 dev_dependencies:
   flutter_test:
